@@ -182,7 +182,7 @@ public class NoteBlockAPI extends JavaPlugin {
 			@Override
 			public void run() {
 				try {
-					if (Updater.checkUpdate("19287", getDescription().getVersion())){
+					if (Updater.checkUpdate("19287", getDescription().getVersion().replaceFirst("-ec\\..*$", ""))){
 						Bukkit.getLogger().info(String.format("[%s] New update available!", plugin.getDescription().getName()));
 					}
 				} catch (IOException e) {
