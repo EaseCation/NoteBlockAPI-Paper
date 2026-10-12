@@ -1,6 +1,7 @@
 package com.xxmicloxx.NoteBlockAPI;
 
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
+import com.xxmicloxx.NoteBlockAPI.playback.AsyncRadioPlayback;
 import com.xxmicloxx.NoteBlockAPI.utils.MathUtils;
 import com.xxmicloxx.NoteBlockAPI.utils.Updater;
 import org.bstats.bukkit.Metrics;
@@ -28,7 +29,7 @@ public class NoteBlockAPI extends JavaPlugin {
 	private Map<UUID, ArrayList<SongPlayer>> playingSongs = new ConcurrentHashMap<UUID, ArrayList<SongPlayer>>();
 	private Map<UUID, Byte> playerVolume = new ConcurrentHashMap<UUID, Byte>();
 
-	private boolean disabling = false;
+	private volatile boolean disabling = false;
 	
 	private HashMap<Plugin, Boolean> dependentPlugins = new HashMap<>();
 
@@ -133,6 +134,7 @@ public class NoteBlockAPI extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		plugin = this;
+		AsyncRadioPlayback.configure(this);
 		
 		for (Plugin pl : getServer().getPluginManager().getPlugins()){
 			if (pl.getDescription().getDepend().contains("NoteBlockAPI") || pl.getDescription().getSoftDepend().contains("NoteBlockAPI")){
@@ -193,6 +195,7 @@ public class NoteBlockAPI extends JavaPlugin {
 	@Override
 	public void onDisable() {    	
 		disabling = true;
+		AsyncRadioPlayback.shutdown();
 		Bukkit.getScheduler().cancelTasks(this);
 		List<BukkitWorker> workers = Bukkit.getScheduler().getActiveWorkers();
 		for (BukkitWorker worker : workers){
@@ -204,6 +207,7 @@ public class NoteBlockAPI extends JavaPlugin {
 	}
 
 	public void doSync(Runnable runnable) {
+		if (disabling) return;
 		getServer().getScheduler().runTask(this, runnable);
 	}
 

@@ -1,6 +1,7 @@
 package com.xxmicloxx.NoteBlockAPI.utils;
 
 import com.xxmicloxx.NoteBlockAPI.model.Sound;
+import com.xxmicloxx.NoteBlockAPI.playback.NativePitch;
 import org.bukkit.Instrument;
 
 /**
@@ -39,6 +40,7 @@ public class InstrumentUtils {
 	 * @return warped name
 	 */
 	public static String warpNameOutOfRange(String name, byte key, short pitch) {
+		if (NativePitch.isEnabled()) return name;
 		key = NoteUtils.applyPitchToKey(key, pitch);
 		// -15 base_-2
 		// 9 base_-1

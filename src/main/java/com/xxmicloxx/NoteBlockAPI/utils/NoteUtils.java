@@ -1,6 +1,7 @@
 package com.xxmicloxx.NoteBlockAPI.utils;
 
 import com.xxmicloxx.NoteBlockAPI.model.Note;
+import com.xxmicloxx.NoteBlockAPI.playback.NativePitch;
 
 public class NoteUtils {
 
@@ -42,6 +43,7 @@ public class NoteUtils {
      * @return pitch
      */
     public static float getPitchInOctave(byte key, short pitch) {
+        if (NativePitch.isEnabled()) return NativePitch.calculate(key, pitch);
         // Apply pitch to key
         key = applyPitchToKey(key, pitch);
         pitch %= 100;
@@ -84,6 +86,7 @@ public class NoteUtils {
      * @return pitch
      */
     public static float getPitchTransposed(byte key, short pitch) {
+        if (NativePitch.isEnabled()) return NativePitch.calculate(key, pitch);
         // Apply key to pitch
         pitch += key * 100;
 
@@ -102,6 +105,7 @@ public class NoteUtils {
      * @return
      */
     public static boolean isOutOfRange(byte key, short pitch){
+        if (NativePitch.isEnabled()) return false;
         key = applyPitchToKey(key, pitch);
 
         if(key < 33) return true;

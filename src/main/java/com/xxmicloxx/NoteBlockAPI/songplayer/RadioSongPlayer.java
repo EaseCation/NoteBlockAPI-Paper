@@ -6,6 +6,7 @@ import com.xxmicloxx.NoteBlockAPI.model.playmode.MonoStereoMode;
 import org.bukkit.entity.Player;
 
 import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
+import com.xxmicloxx.NoteBlockAPI.playback.AsyncRadioPlayback;
 import com.xxmicloxx.NoteBlockAPI.model.Layer;
 import com.xxmicloxx.NoteBlockAPI.model.Note;
 import com.xxmicloxx.NoteBlockAPI.model.Playlist;
@@ -46,7 +47,7 @@ public class RadioSongPlayer extends SongPlayer {
 
 	@Override
 	public void playTick(Player player, int tick) {
-		byte playerVolume = NoteBlockAPI.getPlayerVolume(player);
+		byte playerVolume = AsyncRadioPlayback.playerVolume(player);
 
 		for (Layer layer : song.getLayerHashMap().values()) {
 			Note note = layer.getNote(tick);
@@ -56,7 +57,8 @@ public class RadioSongPlayer extends SongPlayer {
 
 			float volume = (layer.getVolume() * (int) this.volume * (int) playerVolume * note.getVelocity()) / 100_00_00_00F;
 
-			channelMode.play(player, player.getEyeLocation(), song, layer, note, soundCategory, volume, !enable10Octave);
+			channelMode.play(player, AsyncRadioPlayback.eyeLocation(player), song, layer, note, soundCategory,
+				volume * AsyncRadioPlayback.gain(this), !enable10Octave);
 		}
 	}
 

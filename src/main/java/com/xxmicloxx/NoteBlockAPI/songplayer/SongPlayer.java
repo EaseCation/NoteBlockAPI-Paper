@@ -1,6 +1,8 @@
 package com.xxmicloxx.NoteBlockAPI.songplayer;
 
 import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
+import com.xxmicloxx.NoteBlockAPI.playback.PlaybackClock;
+import com.xxmicloxx.NoteBlockAPI.playback.AsyncRadioPlayback;
 import com.xxmicloxx.NoteBlockAPI.event.*;
 import com.xxmicloxx.NoteBlockAPI.model.*;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.ChannelMode;
@@ -309,7 +311,8 @@ public abstract class SongPlayer {
 	 * Starts this SongPlayer
 	 */
 	private void start() {
-		plugin.doAsync(() -> {
+		AsyncRadioPlayback.runPlayback(plugin, this, () -> {
+			PlaybackClock clock = new PlaybackClock();
 			while (!destroyed) {
 				long startTime = System.currentTimeMillis();
 				lock.lock();
@@ -431,7 +434,8 @@ public abstract class SongPlayer {
 						}
 						CallUpdate("tick", tick);
 						
-						plugin.doSync(() -> {
+						final short frame = tick;
+						AsyncRadioPlayback.dispatchPlayback(plugin, this, frame, () -> {
 							try {
 								for (UUID uuid : playerList.keySet()) {
 									Player player = Bukkit.getPlayer(uuid);
@@ -439,7 +443,7 @@ public abstract class SongPlayer {
 										// offline...
 										continue;
 									}
-									playTick(player, tick);
+									playTick(player, frame);
 								}
 							} catch (Exception e){
 								Bukkit.getLogger().severe("An error occurred during the playback of song "
@@ -464,6 +468,10 @@ public abstract class SongPlayer {
 					break;
 				}
 
+				if (AsyncRadioPlayback.isHighResolution(this)) {
+					clock.awaitNextFrame(song.getSpeed(), playing || fading);
+					continue;
+				}
 				long duration = System.currentTimeMillis() - startTime;
 				float delayMillis = song.getDelay() * 50;
 				if (duration < delayMillis) {
@@ -605,6 +613,7 @@ public abstract class SongPlayer {
 				return;
 			}
 			destroyed = true;
+			AsyncRadioPlayback.forget(this);
 			playing = false;
 			setTick((short) -1);
 			CallUpdate("destroyed", destroyed);

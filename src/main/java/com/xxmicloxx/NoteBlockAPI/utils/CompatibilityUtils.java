@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 
 import com.xxmicloxx.NoteBlockAPI.model.CustomInstrument;
 import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
+import com.xxmicloxx.NoteBlockAPI.playback.AsyncRadioPlayback;
 
 /**
  * Fields/methods for reflection &amp; version checking
@@ -203,6 +204,7 @@ public class CompatibilityUtils {
 
 	private static void playSoundUniversal(Player player, Location location, Object sound,
 								 SoundCategory category, float volume, float pitch, float distance) {
+		if (AsyncRadioPlayback.sendSound(location, sound, category, volume, pitch, distance)) return;
 		try {
 			if (isSoundCategoryCompatible()) {
 				Method method = getPlaySoundMethod(sound.getClass(), true);

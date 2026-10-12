@@ -1,0 +1,4 @@
+# Defaults preserve upstream playback. Enable only for clients supporting unrestricted pitch.
+playback:
+  native-unrestricted-pitch: false
+  high-resolution-radio: false
