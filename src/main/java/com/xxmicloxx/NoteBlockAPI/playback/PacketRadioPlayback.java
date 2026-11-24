@@ -44,7 +44,7 @@ public final class PacketRadioPlayback implements AsyncRadioPlayback.Backend, Li
     private final Map<SongPlayer, Thread> workers = new ConcurrentHashMap<>();
     private volatile Map<UUID, ListenerView> listeners = Map.of();
     private volatile boolean running = true;
-    private final BukkitTask sampler;
+    private BukkitTask sampler;
 
     public PacketRadioPlayback(NoteBlockAPI plugin) {
         this.plugin = plugin;
@@ -58,8 +58,6 @@ public final class PacketRadioPlayback implements AsyncRadioPlayback.Backend, Li
             builtinNames.put(sound, name);
             sounds.put(name, Sounds.getByNameOrCreate(name));
         }
-        refreshListeners();
-        sampler = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshListeners, 1, 1);
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -70,6 +68,8 @@ public final class PacketRadioPlayback implements AsyncRadioPlayback.Backend, Li
                 finally { workers.remove(player); AsyncRadioPlayback.forget(player); }
             });
         workers.put(player, worker);
+        if (Bukkit.isPrimaryThread()) armSampler();
+        else Bukkit.getScheduler().runTask(plugin, this::armSampler);
         worker.start();
     }
 
@@ -99,7 +99,22 @@ public final class PacketRadioPlayback implements AsyncRadioPlayback.Backend, Li
             ThreadLocalRandom.current().nextLong()));
     }
 
+    private void armSampler() {
+        if (!running || workers.isEmpty() || (sampler != null && !sampler.isCancelled())) return;
+        refreshListeners();
+        if (!running || workers.isEmpty()) return;
+        sampler = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshListeners, 1, 1);
+    }
+
     private void refreshListeners() {
+        if (workers.isEmpty()) {
+            listeners = Map.of();
+            if (sampler != null) {
+                sampler.cancel();
+                sampler = null;
+            }
+            return;
+        }
         Map<UUID, ListenerView> next = new HashMap<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
@@ -122,7 +137,7 @@ public final class PacketRadioPlayback implements AsyncRadioPlayback.Backend, Li
     public void close() {
         running = false;
         listeners = Map.of();
-        sampler.cancel();
+        if (sampler != null) sampler.cancel();
         HandlerList.unregisterAll(this);
         workers.values().forEach(Thread::interrupt);
         workers.keySet().forEach(AsyncRadioPlayback::forget);
