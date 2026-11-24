@@ -1,9 +1,11 @@
 plugins {
     java
     id("com.gradleup.shadow") version "9.0.0"
+    `maven-publish`
 }
 
-group = "com.xxmicloxx"
+// EaseCation fork coordinates/versioning (upstream com.xxmicloxx 1.7.0-SNAPSHOT), see GeyserWorkspace docs/maven-coordinates.md
+group = "net.easecation.fork.xxmicloxx"
 version = "1.7.0-ec.1"
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(21)) }
 
@@ -36,3 +38,29 @@ tasks.shadowJar {
 }
 tasks.assemble { dependsOn(tasks.shadowJar) }
 tasks.test { useJUnitPlatform() }
+
+// Published to the EaseCation private repository (Aliyun Yunxiao Packages). artifactId = project name.
+// Credentials: yunxiaoMavenUsername / yunxiaoMavenPassword in ~/.gradle/gradle.properties.
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            pom {
+                description.set("EaseCation fork of NoteBlockAPI")
+                properties.set(mapOf("upstream.groupId" to "com.xxmicloxx", "upstream.version" to "1.7.0-SNAPSHOT"))
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "yunxiaoMaven"
+            url = uri(
+                if (version.toString().endsWith("-SNAPSHOT"))
+                    "https://easecation-cn-hangzhou.devops.aliyuncs.com/packages/api/protocol/maven/14075-snapshot-bjmmxv"
+                else
+                    "https://easecation-cn-hangzhou.devops.aliyuncs.com/packages/api/protocol/maven/14075-release-h64s7e"
+            )
+            credentials(PasswordCredentials::class)
+        }
+    }
+}
